@@ -1,137 +1,119 @@
-<h1 align="center">🔐 Phishing Detection & Awareness System</h1>
+# Phishing Detection & Awareness System
 
-<p align="center">
-  A Python CLI tool that analyzes URLs for common phishing indicators and generates a weighted risk score from <b>0–100</b>.
-</p>
+A small Python CLI that analyzes a URL for common phishing indicators,
+produces a weighted risk score (0-100) with a risk level (Low / Medium /
+High / Critical), explains *why* each indicator fired, gives recommended
+actions, and keeps a searchable history of everything you've checked.
 
-<hr>
+This is a **heuristic awareness tool**, not a guarantee of safety - it's
+meant to demonstrate URL/threat analysis techniques and help build
+intuition for what phishing links look like. Always exercise judgment.
 
-<h2>🚀 Features</h2>
+## Features
 
-<ul>
-  <li>🔎 URL and domain structure analysis</li>
-  <li>🌐 SSL/TLS certificate checks</li>
-  <li>🔀 Redirect chain analysis</li>
-  <li>🎯 Brand impersonation detection</li>
-  <li>⚠️ Suspicious keyword and TLD detection</li>
-  <li>📊 Risk scoring from 0–100</li>
-  <li>🗄️ SQLite analysis history</li>
-  <li>📤 CSV report export</li>
-  <li>📡 Offline analysis mode</li>
-  <li>📋 JSON output for automation</li>
-</ul>
+- **Structural analysis** (no network needed): raw-IP hosts, `@` tricks,
+  excessive length, excessive subdomains, hyphen-heavy domains, Punycode
+  homograph domains, high-abuse TLDs, known URL shorteners, credential/
+  urgency keyword clusters, brand-impersonation detection, non-standard
+  ports, heavy percent-encoding.
+- **SSL/TLS checks** (network): HTTPS presence, certificate validity,
+  hostname verification, certificate freshness.
+- **Redirect chain analysis** (network): number of hops, whether the final
+  domain differs from the original (cloaking), whether it lands on a raw IP.
+- **Weighted risk scoring** with a confidence rating based on how many
+  checks could actually be completed.
+- **Plain-language explanations** for every triggered indicator.
+- **Actionable recommendations** tailored to the risk level and the
+  specific indicators found.
+- **SQLite history** of every analysis, with filtering and CSV export.
 
-<h2>📊 Risk Levels</h2>
+## Setup
 
-<table>
-  <tr>
-    <th>Score</th>
-    <th>Risk Level</th>
-  </tr>
-  <tr>
-    <td>0–14</td>
-    <td>🟢 Low</td>
-  </tr>
-  <tr>
-    <td>15–34</td>
-    <td>🟡 Medium</td>
-  </tr>
-  <tr>
-    <td>35–64</td>
-    <td>🟠 High</td>
-  </tr>
-  <tr>
-    <td>65–100</td>
-    <td>🔴 Critical</td>
-  </tr>
-</table>
-
-<h2>⚙️ Installation</h2>
-
-<pre>
+```bash
 pip install -r requirements.txt
-</pre>
+```
 
-<p>Requires Python 3.9+.</p>
+Requires Python 3.9+.
 
-<h2>💻 Usage</h2>
+## Usage
 
-<p><b>Analyze a URL:</b></p>
+Analyze a URL (full analysis, including live SSL/redirect checks):
 
-<pre>
+```bash
 python main.py check "http://paypal-secure.verify-login.xyz/webscr@confirm"
-</pre>
+```
 
-<p><b>Offline analysis:</b></p>
+Skip network checks (useful when offline, or for pure heuristic testing):
 
-<pre>
+```bash
 python main.py check "http://192.168.1.5/login" --offline
-</pre>
+```
 
-<p><b>JSON output:</b></p>
+Get machine-readable output:
 
-<pre>
+```bash
 python main.py check "https://example.com" --json
-</pre>
+```
 
-<p><b>View history:</b></p>
+View history:
 
-<pre>
+```bash
 python main.py history --limit 10
-</pre>
+python main.py history --level Critical
+```
 
-<p><b>Export history:</b></p>
+Export history to CSV:
 
-<pre>
+```bash
 python main.py export report.csv
-</pre>
+```
 
-<h2>📁 Project Structure</h2>
+Clear history:
 
-<pre>
+```bash
+python main.py clear-history
+```
+
+## How the score is built
+
+Each check is an `Indicator` with a `weight` (points contributed if it
+triggers) and a `category` (`structural`, `ssl`, `redirect`). The engine
+sums the weights of all triggered indicators and caps the total at 100:
+
+| Score | Level    |
+|-------|----------|
+| 0-14  | Low      |
+| 15-34 | Medium   |
+| 35-64 | High     |
+| 65+   | Critical |
+
+Network checks that can't be completed (host unreachable, DNS failure,
+etc.) are marked `checked: False` and excluded from scoring rather than
+silently counted as "safe" - the report calls these out separately so you
+know the score is based on partial information.
+
+## Project structure
+
+```
 phishing_detector/
-├── main.py
-├── analyzer.py
-├── structural_checks.py
-├── network_checks.py
-├── scoring.py
-├── report.py
-├── history.py
-├── models.py
-├── url_utils.py
+├── main.py               # CLI entry point
+├── analyzer.py            # Orchestrates all checks into one result
+├── structural_checks.py   # No-network heuristic indicators
+├── network_checks.py      # SSL/TLS + redirect chain indicators
+├── scoring.py              # Risk score + level calculation
+├── report.py                # Recommendations + text report rendering
+├── history.py                # SQLite persistence
+├── models.py                  # Indicator / AnalysisResult dataclasses
+├── url_utils.py                # URL/domain parsing helpers
 └── requirements.txt
-</pre>
+```
 
-<h2>🛠️ Built With</h2>
+## Extending it
 
-<p>
-🐍 Python &nbsp; | &nbsp;
-🔐 Cybersecurity &nbsp; | &nbsp;
-🗄️ SQLite &nbsp; | &nbsp;
-🌐 SSL/TLS &nbsp; | &nbsp;
-📊 JSON/CSV
-</p>
-
-<h2>🔮 Future Improvements</h2>
-
-<ul>
-  <li>Live threat-intelligence integration</li>
-  <li>WHOIS/domain-age analysis</li>
-  <li>Machine-learning based detection</li>
-  <li>Flask/FastAPI web interface</li>
-  <li>SIEM/SOAR integration</li>
-</ul>
-
-<h2>⚠️ Disclaimer</h2>
-
-<p>
-This is a <b>heuristic awareness and educational tool</b>, not a guarantee of safety.
-A low-risk result does not mean a URL is automatically safe.
-Always verify suspicious links through trusted sources.
-</p>
-
-<h2>👨‍💻 Author</h2>
-
-<p>
-<b>Toluwalase Odunuyi</b><br>
-</p>
+- Swap the illustrative `HIGH_RISK_TLDS` / `SUSPICIOUS_KEYWORDS` /
+  `COMMONLY_IMPERSONATED_BRANDS` sets in `structural_checks.py` for a live
+  threat-intel feed.
+- Add a WHOIS-based domain-age check in `network_checks.py` (guard it the
+  same way as the existing checks: `checked=False` on failure).
+- Wrap `analyzer.analyze_url()` in a small Flask/FastAPI app for a web UI -
+  the `AnalysisResult` dataclass already serializes cleanly to JSON.
